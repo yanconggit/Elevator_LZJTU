@@ -2,6 +2,7 @@
 #define ELEVATOR_H
 
 #include <QMainWindow>
+#include <QButtonGroup>
 
 #define direction_stop 0
 #define direction_up 1
@@ -31,6 +32,8 @@ private:
     int mode = 0; //0:全层可停靠；1：单层停靠； 2：双层停靠
 
     bool destinationFloor[50] = {0}; //default no destination floor.
+public:
+    QButtonGroup *m_btnGroup1;
 
 public:
     explicit Elevator(QWidget *parent = 0);
@@ -66,7 +69,9 @@ public:
     int getDirection() const;
     void setDirection(int newDirection);
 
-    void paintEvent(QPaintEvent *event, int x, int y);
+    void paintEvent(QPaintEvent *event);
+    void displayElevator(int x = 10, int y = 30);
+    void setButton(int x = 10, int y = 30);
 private:
     Ui::Elevator *ui;
 };
