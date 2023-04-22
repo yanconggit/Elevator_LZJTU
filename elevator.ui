@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1600</width>
-    <height>1000</height>
+    <width>1920</width>
+    <height>1600</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -47,7 +47,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>RadioButton</string>
+     <string>wtv</string>
     </property>
    </widget>
    <widget class="QCheckBox" name="checkBox">
@@ -70,13 +70,109 @@
     <property name="geometry">
      <rect>
       <x>600</x>
-      <y>540</y>
-      <width>80</width>
-      <height>14</height>
+      <y>590</y>
+      <width>24</width>
+      <height>24</height>
      </rect>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>24</width>
+      <height>24</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>24</width>
+      <height>24</height>
+     </size>
+    </property>
+    <property name="sizeIncrement">
+     <size>
+      <width>24</width>
+      <height>24</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">border-radius:12px;</string>
     </property>
     <property name="text">
      <string>PushButton</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="widget_3" native="true">
+    <property name="geometry">
+     <rect>
+      <x>500</x>
+      <y>430</y>
+      <width>120</width>
+      <height>80</height>
+     </rect>
+    </property>
+    <widget class="QLCDNumber" name="lcdNumber">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>50</y>
+       <width>64</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="intValue" stdset="0">
+      <number>2</number>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QTimeEdit" name="timeEdit">
+    <property name="geometry">
+     <rect>
+      <x>570</x>
+      <y>550</y>
+      <width>118</width>
+      <height>22</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>640</x>
+      <y>350</y>
+      <width>41</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap>up red icon.png</pixmap>
+    </property>
+   </widget>
+   <widget class="QTimeEdit" name="timeEdit_2">
+    <property name="geometry">
+     <rect>
+      <x>1080</x>
+      <y>580</y>
+      <width>118</width>
+      <height>26</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>700</x>
+      <y>407</y>
+      <width>16</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap resource="image.qrc">:/downRed.png</pixmap>
     </property>
    </widget>
   </widget>
@@ -85,8 +181,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1600</width>
-     <height>17</height>
+     <width>1920</width>
+     <height>23</height>
     </rect>
    </property>
   </widget>
@@ -101,6 +197,8 @@
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="image.qrc"/>
+ </resources>
  <connections/>
 </ui>

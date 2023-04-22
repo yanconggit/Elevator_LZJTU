@@ -6,6 +6,10 @@
 
 class person
 {
+private:
+    int Num;
+    int Destination;
+    int Weight;
 public:
     person();
 };
