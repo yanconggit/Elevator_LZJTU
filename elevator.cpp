@@ -18,7 +18,12 @@
 
 #define TEST
 
+#ifdef TEST
 #define runTimerCycle 200
+#else
+#define runTimerCycle 200
+#endif
+
 
 
 
@@ -62,6 +67,25 @@ Elevator::Elevator(QWidget *parent) :
     control->setTimerType(Qt::PreciseTimer);
     connect(control,SIGNAL(timeout()),this,SLOT(workControl()));
     control->start(200);
+
+}
+
+void Elevator::setMode()
+{
+    if(mode==mode_allLaer)
+    {}
+    else if(mode==mode_oneLaer) //单层运行
+    {
+        for(int i=0;i<13;i++)
+        {
+            if(i%2) //单数 双层
+            {
+                destinationFloorBut[i].setDisabled(true);
+                FxUp[i].setDisabled(true);
+                FxDown[i].setDisabled(true);
+            }
+        }
+    }
 
 }
 
@@ -170,7 +194,11 @@ void Elevator::carDoorCartoon(volatile int action)
         doorOffset = 65;
         Timer_cartoon->stop();
     }
+#ifdef TEST
+    else if(doorOffset >= 50&&(action==doorStatus_opened))  //开门时间够了 关门
+#else
     else if(doorOffset >= 150&&(action==doorStatus_opened))  //开门时间够了 关门
+#endif
     {
         int temp = action;
         temp +=1;
@@ -648,7 +676,11 @@ void Elevator::openDoorButFun()
 void Elevator::closeDoorButFun()
 {
     if(getInDoorStatus()== doorStatus_opened)
+#ifdef TEST
+        doorOffset = 40;
+#else
         doorOffset = 140;
+#endif
 }
 
 void Elevator::leaveNumConfirm(void)  //按下下来乘客数后点击确认按钮后调用的函数
@@ -734,6 +766,7 @@ void Elevator::downRequestFun(int requestFool)
 
 void Elevator::workControl()  // 电梯运行控制
 {
+    desFloorAndDir temp;
     // 确定电梯是否要运行 门关好了并且有运行需求了才会运行
     if(getInDoorStatus() == doorStatus_closed&&getDirection()!=direction_stop)
         runTimeBaseTimer->start(runTimerCycle);
@@ -746,51 +779,219 @@ void Elevator::workControl()  // 电梯运行控制
     else if(getDirection() == direction_up)
     {
         if(runTimeBase >= 15) //运行了三秒钟了到达了下一个楼层
-        {
-            runTimeBase = 0;
-            setCurrentFloor(getCurrentFloor()+1);
-            if(!demandQuery(direction_up)) //上面没有向上的请求了
-            {
-                runTimeBaseTimer->stop();
-//                if(demandQuery(direction_down)) //下面有向下的请求
-//                    setDirection(direction_down);
+                {
+                runTimeBase = 0;
+                setCurrentFloor(getCurrentFloor()+1);
+                int a = getCurrentFloor();
+        //        FxDown[a-1].setStyleSheet("");
+        //        resetdownRequest(a);
+                if(getDestinationFloor(a)||getupRequest(a)) //当前楼层为目的楼层
+                {
+                    setInDoorStatus(doorStatus_opening);
+                    destinationFloorBut[a-1].setStyleSheet("");
+                    FxUp[a-1].setStyleSheet("");
+                    resetDestinationFloor(a);
+                    resetupRequest(a);
+                    runTimeBaseTimer->stop();
+                }
+                if(demandQuery(direction_up))
+                {
 
-                setDirection(direction_stop);
-            }
-            int a = getCurrentFloor();
-            if(getDestinationFloor(a)||getupRequest(a)) //当前楼层为目的楼层
-            {
-                setInDoorStatus(doorStatus_opening);
-                destinationFloorBut[a-1].setStyleSheet("");
-                FxUp[a-1].setStyleSheet("");
-                resetDestinationFloor(a);
-                resetupRequest(a);
-                runTimeBaseTimer->stop();
-            }
-        }
+                }
+                else //没有顺道的请求
+                {
+                    runTimeBaseTimer->stop();
+                    setDirection(direction_stop);
+                    temp = OthersDemandQuery(direction_up);
+                    if(temp.destinationStr==a) //目标是当前楼层
+                    {
+                        setInDoorStatus(doorStatus_opening);
+                        destinationFloorBut[a-1].setStyleSheet("");
+                        resetDestinationFloor(a);
+                        FxDown[a-1].setStyleSheet("");
+                        resetdownRequest(a);
+                        temp = OthersDemandQuery(direction_up);
+                        setDirection(temp.directionStr);
+                        runTimeBaseTimer->stop();
+                    }
+                    if(temp.directionStr)//有运行需求
+                    {
+                        setDirection(temp.directionStr);
+                        if(temp.directionStr==a)
+                        {
+                            //setInDoorStatus(doorStatus_opening);
+                            //destinationFloorBut[a-1].setStyleSheet("");
+                            if(temp.directionStr==direction_down)
+                            {
+
+                                FxDown[a-1].setStyleSheet("");
+                                resetdownRequest(a);
+                            }
+                            else if(temp.directionStr==direction_up)
+                            {
+                                FxUp[a-1].setStyleSheet("");
+                                resetupRequest(a);
+                            }
+                        }
+                        runTimeBaseTimer->stop();
+                    }
+                }
     }
+    }
+//        if(runTimeBase >= 15) //运行了三秒钟了到达了下一个楼层
+//        {
+//            runTimeBase = 0;
+//            setCurrentFloor(getCurrentFloor()+1);
+//            int a = getCurrentFloor();
+
+//            if(!demandQuery(direction_up)) //没有顺道的请求
+//            {
+//                temp = OthersDemandQuery(direction_up);
+//                if(temp.destinationStr==a&&temp.directionStr==direction_stop) //目标是当前楼层
+//                {
+//                    setInDoorStatus(doorStatus_opening);
+//                    destinationFloorBut[a-1].setStyleSheet("");
+//                    FxUp[a-1].setStyleSheet("");
+//                    resetupRequest(a);
+//                    resetDestinationFloor(a);
+//                    temp = OthersDemandQuery(direction_up);
+//                    setDirection(temp.directionStr);
+//                    runTimeBaseTimer->stop();
+//                }
+//                if(temp.directionStr)//有运行需求
+//                {
+//                    setInDoorStatus(doorStatus_opening);
+//                    destinationFloorBut[a-1].setStyleSheet("");
+//                    if(temp.directionStr==direction_down)
+//                    {
+//                        FxDown[a-1].setStyleSheet("");
+//                        resetdownRequest(a);
+//                    }
+//                    else if(temp.directionStr==direction_up)
+//                    {
+//                        FxUp[a-1].setStyleSheet("");
+//                        resetupRequest(a);
+//                    }
+//                    resetDestinationFloor(a);
+//                    runTimeBaseTimer->stop();
+//                }
+//            }
+
+
+////            else if()  //有其他运行请求
+////            {
+////                int direction_temp = OthersDemandQuery(direction_up);
+////                if(direction_temp==direction_up)
+////                {
+////                    set
+////                }
+////            }
+////            else //没有运行需求
+////            {
+////                runTimeBaseTimer->stop();
+////            }
+
+//            if(getDestinationFloor(a)||getupRequest(a)) //当前楼层为目的楼层
+//            {
+//                setInDoorStatus(doorStatus_opening);
+//                destinationFloorBut[a-1].setStyleSheet("");
+//                FxUp[a-1].setStyleSheet("");
+//                resetDestinationFloor(a);
+//                resetupRequest(a);
+//                runTimeBaseTimer->stop();
+//            }
+////            else if(OthersDemandQuery(direction_up) == direction_down&&getdownRequest(a))
+////            {
+
+////            }
+///
+//        }
+//    }
+
+
     else if(getDirection() == direction_down)
     {
         if(runTimeBase >= 15) //运行了三秒钟了到达了下一个楼层
         {
-            runTimeBase = 0;
-            setCurrentFloor(getCurrentFloor()-1);
-            if(!demandQuery(direction_down)) //没有请求了
-            {
-                runTimeBaseTimer->stop();
-                setDirection(direction_stop);
-            }
-            int a = getCurrentFloor();
-            if(getDestinationFloor(a)||getdownRequest(a)) //当前楼层为目的楼层
+        runTimeBase = 0;
+        setCurrentFloor(getCurrentFloor()-1);
+        int a = getCurrentFloor();
+//        FxDown[a-1].setStyleSheet("");
+//        resetdownRequest(a);
+        if(getDestinationFloor(a)||getdownRequest(a)) //当前楼层为目的楼层
+        {
+            setInDoorStatus(doorStatus_opening);
+            destinationFloorBut[a-1].setStyleSheet("");
+            FxDown[a-1].setStyleSheet("");
+            resetDestinationFloor(a);
+            resetdownRequest(a);
+            runTimeBaseTimer->stop();
+        }
+        if(demandQuery(direction_down))
+        {
+
+        }
+        else //没有顺道的请求
+        {
+            runTimeBaseTimer->stop();
+            setDirection(direction_stop);
+            temp = OthersDemandQuery(direction_down);
+            if(temp.destinationStr==a) //目标是当前楼层
             {
                 setInDoorStatus(doorStatus_opening);
                 destinationFloorBut[a-1].setStyleSheet("");
-                FxDown[a-1].setStyleSheet("");
                 resetDestinationFloor(a);
-                resetdownRequest(a);
+                FxUp[a-1].setStyleSheet("");
+                resetupRequest(a);
+                temp = OthersDemandQuery(direction_down);
+                setDirection(temp.directionStr);
+                runTimeBaseTimer->stop();
+            }
+            if(temp.directionStr)//有运行需求
+            {
+                setDirection(temp.directionStr);
+                if(temp.directionStr==a)
+                {
+                    setInDoorStatus(doorStatus_opening);
+                    destinationFloorBut[a-1].setStyleSheet("");
+                    if(temp.directionStr==direction_down)
+                    {
+                        setDirection(temp.directionStr);
+                        FxDown[a-1].setStyleSheet("");
+                        resetdownRequest(a);
+                    }
+                    else if(temp.directionStr==direction_up)
+                    {
+                        setDirection(temp.directionStr);
+                        FxUp[a-1].setStyleSheet("");
+                        resetupRequest(a);
+                    }
+                }
+
                 runTimeBaseTimer->stop();
             }
         }
+}
+//        if(runTimeBase >= 15) //运行了三秒钟了到达了下一个楼层
+//        {
+//            runTimeBase = 0;
+//            setCurrentFloor(getCurrentFloor()-1);
+//            if(!demandQuery(direction_down)) //没有请求了
+//            {
+//                runTimeBaseTimer->stop();
+//                setDirection(direction_stop);
+//            }
+//            int a = getCurrentFloor();
+//            if(getDestinationFloor(a)||getdownRequest(a)) //当前楼层为目的楼层
+//            {
+//                setInDoorStatus(doorStatus_opening);
+//                destinationFloorBut[a-1].setStyleSheet("");
+//                FxDown[a-1].setStyleSheet("");
+//                resetDestinationFloor(a);
+//                resetdownRequest(a);
+//                runTimeBaseTimer->stop();
+//            }
+//        }
     }
 }
 
@@ -808,13 +1009,7 @@ bool Elevator::demandQuery(int direction)
         // 查询目的楼层
         for(int i=getCurrentFloor()+1;i<=maxFloor;i++)
         {
-            if(getDestinationFloor(i) == 1)
-                return 1;
-        }
-        // 查询请求楼层
-        for(int i=getCurrentFloor()+1;i<=maxFloor;i++)
-        {
-            if(getupRequest(i))
+            if(getDestinationFloor(i) == 1||getupRequest(i)==1)
                 return 1;
         }
     }
@@ -823,15 +1018,15 @@ bool Elevator::demandQuery(int direction)
         // 查询目的楼层
         for(int i=getCurrentFloor()-1;i>=minFloor;i--)
         {
-            if(getDestinationFloor(i))
+            if(getDestinationFloor(i)||getdownRequest(i))
                 return 1;
         }
-        // 查询请求楼层
-         for(int i=getCurrentFloor()-1;i>=minFloor;i--)
-        {
-            if(getdownRequest(i))
-                return 1;
-        }
+//        // 查询请求楼层
+//         for(int i=getCurrentFloor()-1;i>=minFloor;i--)
+//        {
+//            if(getdownRequest(i))
+//                return 1;
+//        }
     }
 
     return 0;
@@ -844,20 +1039,125 @@ bool Elevator::demandQuery(int direction)
  * @param 返回值 direction_up direction_down direction_stop
  *
  */
-int Elevator::OthersDemandQuery(int direction)
+struct Elevator::desFloorAndDir Elevator::OthersDemandQuery(int direction)
 {
+    desFloorAndDir temp;
     int current = getCurrentFloor();
+    int destinationFloor_temp=0;
     if(direction==direction_up)
     {
-        if(current>=7) //处于高楼层，优先响应高楼层向下的请求
+        for(int i = 1;i<=maxFloor;i++)  //以最高的向下呼叫或者目标所在楼层为电梯当前目标楼层。
         {
-            for(int i = current;i<=maxFloor;i++)
+            if(getdownRequest(i)||getDestinationFloor(i))  //如果有就往上走
             {
-                if(getdownRequest(i))
-                    return direction_up;
+                destinationFloor_temp = i; //记录目前最高的向下或者目的楼层
             }
+
         }
+        if(destinationFloor_temp) //有需求
+        {
+            temp.destinationStr = destinationFloor_temp;
+            if(current-destinationFloor_temp>0)
+                temp.directionStr = direction_down;
+            else if(current-destinationFloor_temp<0)
+                temp.directionStr = direction_up;
+
+            return temp;
+        }
+        for(int i=13;i>=minFloor;i--)//以最低的向上呼叫所在楼层为电梯当前的目标楼层。
+        {
+            if(getupRequest(i))
+            {
+                destinationFloor_temp = i; //记录目前最高的向下或者目的楼层
+            }
+
+        }
+        if(destinationFloor_temp) //有需求
+        {
+            temp.destinationStr = destinationFloor_temp;
+            if(current-destinationFloor_temp>0)
+                temp.directionStr = direction_down;
+            else if(current-destinationFloor_temp<0)
+                temp.directionStr = direction_up;
+
+            return temp;
+        }
+
+//        if(getdownRequest(current))  //查看当前楼层是否有向下的需求
+//        {
+//            setDirection(direction_down_F);
+//            FxDown[current-1].setStyleSheet("");
+//            //resetdownRequest(current);
+//            setInDoorStatus(doorStatus_opening);
+//            //return direction_suspend;
+//        }
+//        for(int i=current-1;i>=minFloor;i--)  //查看下面是否有需求
+//        {
+//            if(getdownRequest(i)||getupRequest(i)||getDestinationFloor(i))
+//                return direction_down_F;
+//        }
+    }
+    else if(direction==direction_down)
+    {
+        for(int i=13;i>=minFloor;i--)//以最低的向上呼叫或者目标所在楼层为电梯当前的目标楼层。
+        {
+            if(getupRequest(i)||getDestinationFloor(i))
+            {
+                destinationFloor_temp = i; //记录目前最高的向下或者目的楼层
+            }
+
+        }
+        if(destinationFloor_temp) //有需求
+        {
+            temp.destinationStr = destinationFloor_temp;
+            if(current-destinationFloor_temp>0)
+                temp.directionStr = direction_down;
+            else if(current-destinationFloor_temp<0)
+                temp.directionStr = direction_up;
+
+            return temp;
+        }
+        for(int i = 1;i<=maxFloor;i++)  //以最高的向下呼叫为电梯当前目标楼层。
+        {
+            if(getdownRequest(i))  //
+            {
+                destinationFloor_temp = i; //记录目前最高的向下或者目的楼层
+            }
+
+        }
+        if(destinationFloor_temp) //有需求
+        {
+            temp.destinationStr = destinationFloor_temp;
+            if(current-destinationFloor_temp>0)
+                temp.directionStr = direction_down;
+            else if(current-destinationFloor_temp<0)
+                temp.directionStr = direction_up;
+
+            return temp;
+        }
+
+
+//       //
+//        for(int i=current-1;i>=minFloor;i--)  //查看下面有没有向上的需求
+//        {
+//            if(getupRequest(i))  //如果有就往下走
+//                return direction_down_F;
+//        }
+//        if(getupRequest(current))  //查看当前楼层是否有向上的需求
+//        {
+//            setDirection(direction_up);
+//            FxUp[current-1].setStyleSheet("");
+//            //resetupRequest(current);
+//            setInDoorStatus(doorStatus_opening);
+//            return direction_up_F;
+//        }
+//        for(int i = current+1;i<=maxFloor;i++)  //查看上面有没有向下的需求
+//        {
+//            if(getdownRequest(i)||getupRequest(i)||getDestinationFloor(i))
+//                return direction_up_F;
+//        }
     }
 
+    return temp;
 }
 
