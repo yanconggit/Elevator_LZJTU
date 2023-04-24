@@ -15,8 +15,9 @@
 #include <QTimer>
 #include <qfont.h>
 #include "work.h"
+#include "QMessageBox"
 
-#define TEST
+//#define TEST
 
 #ifdef TEST
 #define runTimerCycle 200
@@ -35,8 +36,9 @@ Elevator::Elevator(QWidget *parent) :
     ui(new Ui::Elevator)
 {
     ui->setupUi(this);
-    setFixedSize(1900, 800);//
-    setWindowTitle("兰州交通大学图书馆电梯模拟系统");//窗口标题
+    //setFixedSize(1900, 800);//
+    setFixedSize(480, 750);//
+    setWindowTitle("兰州交通大学图书馆电梯模拟系统 by w烟囱");//窗口标题
     this->update();
     Timer_cartoon = new QTimer();
     connect(Timer_cartoon,SIGNAL(timeout()),this,SLOT(handleCartoon()));
@@ -67,11 +69,13 @@ Elevator::Elevator(QWidget *parent) :
     control->setTimerType(Qt::PreciseTimer);
     connect(control,SIGNAL(timeout()),this,SLOT(workControl()));
     control->start(200);
-
+    setMode();
 }
 
 void Elevator::setMode()
 {
+    FxUp[maxFloor-1].setDisabled(true);
+    FxDown[minFloor-1].setDisabled(true);
     if(mode==mode_allLaer)
     {}
     else if(mode==mode_oneLaer) //单层运行
@@ -85,6 +89,12 @@ void Elevator::setMode()
                 FxDown[i].setDisabled(true);
             }
         }
+    }
+
+    //离开人数有效性设置
+    for(int i=1;i<10;i++)
+    {
+        leavePeopleNum[i].setEnabled(false);
     }
 
 }
@@ -149,10 +159,32 @@ void Elevator::carDoorCartoon(volatile int action)
     else if(action == doorStatus_opened) //opened
     {
         if(Timer_cartoon->isActive() ==false)
+        {
             Timer_cartoon->start(100);
+            int direction_temp = getDirection();
+            if(direction_temp==direction_up)
+            {
+                upPeopleNum[currentFloor] = carPeople(upPeopleNum[currentFloor]);
+                waitingUpNum[currentFloor-1].setText(QString::number(upPeopleNum[currentFloor]));
+            }
+            else if(direction_temp==direction_down)
+            {
+                downPeopleNum[currentFloor]=carPeople(downPeopleNum[currentFloor]);
+                waitingDownNum[currentFloor-1].setText(QString::number(downPeopleNum[currentFloor]));
+            }
+            else
+            {
+                downPeopleNum[currentFloor]=carPeople(downPeopleNum[currentFloor]);
+                upPeopleNum[currentFloor] = carPeople(upPeopleNum[currentFloor]);
+                waitingUpNum[currentFloor-1].setText(QString::number(upPeopleNum[currentFloor]));
+                waitingDownNum[currentFloor-1].setText(QString::number(downPeopleNum[currentFloor]));
+            }
+        }
+
 
         doorStatus.setStyleSheet("color:black;");
         doorStatus.setText("门已打开");
+
 //        indoorDraw.eraseRect(begin_x+40,begin_y+180,65,110);
 //        indoorDraw.eraseRect(begin_x+105,begin_y+180,65,110);
 //        //当前楼层的厅门
@@ -197,7 +229,7 @@ void Elevator::carDoorCartoon(volatile int action)
 #ifdef TEST
     else if(doorOffset >= 50&&(action==doorStatus_opened))  //开门时间够了 关门
 #else
-    else if(doorOffset >= 150&&(action==doorStatus_opened))  //开门时间够了 关门
+    else if(doorOffset >= 120&&(action==doorStatus_opened))  //开门时间够了 关门
 #endif
     {
         int temp = action;
@@ -257,7 +289,7 @@ void Elevator::displayElevator()
     constText.drawText(begin_x+95,begin_y+320,"内部按钮");
 
     constText.setFont(QFont("宋体",10));
-    constText.drawText(begin_x+10,begin_y+77,"超载指示灯");
+    constText.drawText(begin_x+10,begin_y+77,"满载指示灯");
     //constText.restore();
 
     //绘制分割线
@@ -269,8 +301,12 @@ void Elevator::displayElevator()
     cutoffRule.setPen(QPen(Qt::black,1)); //绘制内部按钮外框
     cutoffRule.drawRect(begin_x+70,begin_y+300,120,370);  //外框
 
+
+    // 楼层指示
+    floorIndicator.display(QString::number(getCurrentFloor()));
+    floorIndicatorOut.display(QString::number(getCurrentFloor()));
     //超载指示灯
-    if(getOverloadFlag()) //超载
+    if(getPeopleNum()>=maxPeoleNum) //超载
     {
         if(flashFlag)
             fullLoadIndicator.setStyleSheet("QPushButton{border-radius:20px;border:1px solid rgb(50, 50, 50);background-color:red}");
@@ -280,9 +316,6 @@ void Elevator::displayElevator()
     else
         fullLoadIndicator.setStyleSheet("QPushButton{border-radius:20px;border:1px solid rgb(50, 50, 50);background-color:green;}");
 
-    // 楼层指示
-    floorIndicator.display(QString::number(getCurrentFloor()));
-    floorIndicatorOut.display(QString::number(getCurrentFloor()));
 
 
 
@@ -332,7 +365,9 @@ void Elevator::setButton()
     destinationFloorClose_but.setGeometry(begin_x+140,begin_y+330,40,35);
     destinationFloorOpen_but.setText("<||>");
     destinationFloorClose_but.setText(">||<");
-    connect(&destinationFloorOpen_but,&QPushButton::clicked,this,Elevator::openDoorButFun);
+    destinationFloorOpen_but.setStyleSheet("QPushButton:pressed{border:3px outset rgb(255,99,65);}");
+    destinationFloorClose_but.setStyleSheet("QPushButton:pressed{border:3px outset rgb(255,99,65);}");
+    connect(&destinationFloorOpen_but,&QPushButton::pressed,this,Elevator::openDoorButFun);
     connect(&destinationFloorClose_but,&QPushButton::clicked,this,Elevator::closeDoorButFun);
 
     for(int i=0;i<13;i++)
@@ -389,6 +424,12 @@ void Elevator::setButton()
         waitingDownNum[i-1].setText("0");
     }
 
+    // 电梯内人数显示
+    peopleNumLabel.setParent(this);
+    peopleNumLabel.setGeometry(begin_x+240,begin_y+90,60,30);
+    peopleNumLabel.setFont(QFont("宋体",26));
+    peopleNumLabel.setStyleSheet("color:black;");
+    peopleNumLabel.setText("0");
 
     // 超载指示灯
     fullLoadIndicator.setParent(this);
@@ -396,6 +437,7 @@ void Elevator::setButton()
     fullLoadIndicator.setFixedSize(40,40);
     fullLoadIndicator.raise();
     fullLoadIndicator.setEnabled(false);
+    fullLoadIndicator.setStyleSheet("QPushButton{border-radius:20px;border:1px solid rgb(50, 50, 50);background-color:green;}");
 
     // 轿厢内部楼层指示
     floorIndicator.setParent(this);
@@ -662,7 +704,7 @@ void Elevator::runTimeBaseFun()
 #ifdef TEST
     runTimeBase +=5;//测试
 #else
-    //runTimeBase += 1;
+    runTimeBase += 5;
 #endif
     showCarLocation();
 }
@@ -670,7 +712,15 @@ void Elevator::runTimeBaseFun()
 void Elevator::openDoorButFun()
 {
     if(getInDoorStatus()== doorStatus_closing)
+    {
         setInDoorStatus(doorStatus_opening);
+    }
+    else
+    {
+        QMessageBox::warning(this, "哎呀错啊","只有门关闭过程中才能用啦,想出去的按下当前楼层的按钮就可以开门啦");
+    }
+
+
 }
 
 void Elevator::closeDoorButFun()
@@ -679,15 +729,80 @@ void Elevator::closeDoorButFun()
 #ifdef TEST
         doorOffset = 40;
 #else
-        doorOffset = 140;
+        doorOffset = 100;
 #endif
+}
+
+/**
+ * @brief 统计轿厢内的人数
+ *
+ * @param Num 计划上来的人数
+ * @param leave 0:上电梯里 1：表示出电梯
+ * @param 返回值 0:没问题;  others:有几人上不来
+ *
+ */
+int Elevator::carPeople(int Num,bool leave)
+{
+    int temp=peopleNum,Sum=0,returnNum=0;
+    if(!leave) //上电梯
+    {
+
+        Sum = temp+Num;
+        if(Sum>=maxPeoleNum)//满载或超载
+        {
+            peopleNum = maxPeoleNum;
+            peopleNumLabel.setText(QString::number(peopleNum));
+            returnNum=Sum - maxPeoleNum;
+        }
+        else
+        {
+            peopleNum = Sum;
+            peopleNumLabel.setText(QString::number(peopleNum));
+            returnNum = 0;
+        }
+    }
+    else
+    {
+        peopleNum -=Num;
+        peopleNumLabel.setText(QString::number(peopleNum));
+
+    }
+    // 设置下来乘客数目的有效性
+    if(peopleNum>=9)
+    {
+        for(int i=1;i<10;i++)
+        {
+            leavePeopleNum[i].setEnabled(true);
+        }
+    }
+    else
+    {
+        for(int i=1;i<=peopleNum;i++)
+        {
+            leavePeopleNum[i].setEnabled(true);
+        }
+        for(int i=peopleNum+1;i<=9;i++)
+        {
+            leavePeopleNum[i].setEnabled(false);
+        }
+    }
+    if(!leave) //上电梯
+        return (returnNum);
+    else
+        return 0;
 }
 
 void Elevator::leaveNumConfirm(void)  //按下下来乘客数后点击确认按钮后调用的函数
 {
     if(getInDoorStatus() == doorStatus_opened)
     {
-
+        carPeople(m_btnGroup1->checkedId(),1);
+        doorOffset = 0;
+    }
+    else
+    {
+        //QMessageBox::warning(this, "Warning","The IP Address Format is not right, please Input again!");
+        QMessageBox::warning(this, "哎呀错啦","等门打开之后才能下来啊");
     }
 }
 
@@ -720,6 +835,8 @@ void Elevator::upRequestFun(int requestFool)
 {
     setupRequest(requestFool);
     FxUp[requestFool-1].setStyleSheet("QPushButton{border:3px outset rgb(255,99,65);}");
+    upPeopleNum[requestFool]+=1;
+    waitingUpNum[requestFool-1].setText(QString::number(upPeopleNum[requestFool]));
     if(getDirection() == direction_stop)
     {
         if(requestFool-currentFloor>0) //目的楼层在上方
@@ -744,6 +861,8 @@ void Elevator::downRequestFun(int requestFool)
 {
     setdownRequest(requestFool);
     FxDown[requestFool-1].setStyleSheet("QPushButton{border:3px outset rgb(255,99,65);}");
+    downPeopleNum[requestFool]+=1;
+    waitingDownNum[requestFool-1].setText(QString::number(downPeopleNum[requestFool]));
     if(getDirection() == direction_stop)
     {
         if(requestFool-currentFloor>0) //目的楼层在上方
@@ -768,7 +887,7 @@ void Elevator::workControl()  // 电梯运行控制
 {
     desFloorAndDir temp;
     // 确定电梯是否要运行 门关好了并且有运行需求了才会运行
-    if(getInDoorStatus() == doorStatus_closed&&getDirection()!=direction_stop)
+    if(getInDoorStatus() == doorStatus_closed&&getDirection()!=direction_stop&&runTimeBaseTimer->isActive() ==false)
         runTimeBaseTimer->start(runTimerCycle);
 
     //确定电梯现在的位置
@@ -779,7 +898,7 @@ void Elevator::workControl()  // 电梯运行控制
     else if(getDirection() == direction_up)
     {
         if(runTimeBase >= 15) //运行了三秒钟了到达了下一个楼层
-                {
+            {
                 runTimeBase = 0;
                 setCurrentFloor(getCurrentFloor()+1);
                 int a = getCurrentFloor();
@@ -817,10 +936,13 @@ void Elevator::workControl()  // 电梯运行控制
                     if(temp.directionStr)//有运行需求
                     {
                         setDirection(temp.directionStr);
-                        if(temp.directionStr==a)
+                        if(temp.destinationStr==a)
                         {
                             //setInDoorStatus(doorStatus_opening);
                             //destinationFloorBut[a-1].setStyleSheet("");
+                            downPeopleNum[currentFloor]=carPeople(downPeopleNum[currentFloor]);
+                            waitingDownNum[currentFloor-1].setText(QString::number(downPeopleNum[currentFloor]));
+
                             if(temp.directionStr==direction_down)
                             {
 
@@ -950,18 +1072,22 @@ void Elevator::workControl()  // 电梯运行控制
             if(temp.directionStr)//有运行需求
             {
                 setDirection(temp.directionStr);
-                if(temp.directionStr==a)
+                if(temp.destinationStr==a)
                 {
                     setInDoorStatus(doorStatus_opening);
                     destinationFloorBut[a-1].setStyleSheet("");
+                    upPeopleNum[currentFloor] = carPeople(upPeopleNum[currentFloor]);
+                    waitingUpNum[currentFloor-1].setText(QString::number(upPeopleNum[currentFloor]));
                     if(temp.directionStr==direction_down)
                     {
                         setDirection(temp.directionStr);
                         FxDown[a-1].setStyleSheet("");
                         resetdownRequest(a);
                     }
+
                     else if(temp.directionStr==direction_up)
                     {
+
                         setDirection(temp.directionStr);
                         FxUp[a-1].setStyleSheet("");
                         resetupRequest(a);
