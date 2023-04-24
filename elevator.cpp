@@ -16,6 +16,8 @@
 #include <qfont.h>
 #include "work.h"
 #include "QMessageBox"
+#include "qdialog.h"
+#include "QInputDialog"
 
 //#define TEST
 
@@ -38,8 +40,39 @@ Elevator::Elevator(QWidget *parent) :
     ui->setupUi(this);
     //setFixedSize(1900, 800);//
     setFixedSize(480, 750);//
-    setWindowTitle("兰州交通大学图书馆电梯模拟系统 by w烟囱");//窗口标题
+    setWindowTitle("兰州交通大学图书馆电梯仿真系统 by w烟囱");//窗口标题
     this->update();
+
+    QStringList items;//ComboBox控件的内容
+    items<<QStringLiteral("全层运行(实际没这种)")<<QStringLiteral("单层运行")<<QStringLiteral("双层运行");
+    QString dlgTitle=QStringLiteral("运行模式选择");//对话框标题
+    QString txtLabel=QStringLiteral("请选择以下运行模式");//对话框Label显示内容
+    int curIndex=0;//ComboBox控件默认哪个索引的内容
+    bool editable=false;//ComboBox控件内容是否可被编辑
+    bool ok=false;
+    QInputDialog inputDigalog(this);
+    QString text=inputDigalog.getItem(this,dlgTitle,txtLabel,items,curIndex,editable,&ok);
+    //inputDigalog.resize(QSize(400,100));
+//    inputDigalog.setFixedSize(400,200);
+//    inputDigalog.setGeometry(400,400,400,200);
+
+
+    if(ok && !text.isEmpty())
+    {
+        if(text == "全层运行(实际没这种)")
+        {
+            setMode(mode_allLaer);
+        }
+        else if(text == "单层运行")
+        {
+            setMode(mode_oneLaer);
+        }
+        else if(text == "双层运行")
+        {
+            setMode(mode_twoLaer);
+        }
+    }
+
     Timer_cartoon = new QTimer();
     connect(Timer_cartoon,SIGNAL(timeout()),this,SLOT(handleCartoon()));
     runTimeBaseTimer = new QTimer();
@@ -58,6 +91,9 @@ Elevator::Elevator(QWidget *parent) :
     up_gray.load(":/upGray.png");
     down_red.load((":/downRed.png"));
     down_gray.load(":/downGray.png");
+
+
+
     setButton();
     //setInDoorStatus(1); //测试用的
 //    QTimer *control = new QTimer(this);
@@ -90,12 +126,28 @@ void Elevator::setMode()
             }
         }
     }
+    else if(mode==mode_twoLaer) //单层运行
+    {
+        for(int i=0;i<13;i++)
+        {
+            if(!(i%2)) //双数 单层
+            {
+                destinationFloorBut[i].setDisabled(true);
+                FxUp[i].setDisabled(true);
+                FxDown[i].setDisabled(true);
+            }
+        }
+    }
 
     //离开人数有效性设置
     for(int i=1;i<10;i++)
     {
         leavePeopleNum[i].setEnabled(false);
     }
+    //基础楼层时刻有效
+    destinationFloorBut[1].setDisabled(false);
+    FxUp[1].setDisabled(false);
+    FxDown[1].setDisabled(false);
 
 }
 
@@ -477,6 +529,16 @@ void Elevator::setButton()
     carLocation[0].setGeometry(begin_x+215,begin_y+672-40*getCurrentFloor()-runTimeBase*2.67,10,39);
     carLocation[1].setGeometry(begin_x+295,begin_y+672-40*getCurrentFloor()-runTimeBase*2.67,10,39);
 
+//    // 关于信息
+//    About_but.setParent(this);
+//    About_but.setGeometry(20,10,40,30);
+//    About_but.setFont(QFont("宋体",16));
+//    About_but.setText("关于");
+
+    fileMenu = menuBar()->addMenu ("关于"); /* 创建一个name为file的菜单栏 */
+    fileMenu->addSeparator();
+    //connect(fileMenu,SIGNAL(aboutToHide()),this,SLOT(aboutMessageShow()));
+    connect(fileMenu,SIGNAL(aboutToShow()),this,SLOT(aboutMessageShow()));
 //    // 如果按钮组内ID为0的单选按钮被选中
 //    if(m_btnGroup1->checkedId() == 0)
 //    {
@@ -1285,5 +1347,12 @@ struct Elevator::desFloorAndDir Elevator::OthersDemandQuery(int direction)
     }
 
     return temp;
+}
+
+void Elevator::aboutMessageShow(void)
+{
+    QMessageBox::about(this,"关于",   "LZJTU图书馆电梯仿真系统 1.0 \r\n\n"
+                                     "作者:w烟囱\r\n\n"
+                                     "日期 2023年4月24日");
 }
 
