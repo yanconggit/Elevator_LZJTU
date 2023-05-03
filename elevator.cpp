@@ -773,26 +773,39 @@ void Elevator::runTimeBaseFun()
 
 void Elevator::openDoorButFun()
 {
-    if(getInDoorStatus()== doorStatus_closing)
+    if(peopleNum == 0)
     {
-        setInDoorStatus(doorStatus_opening);
+        QMessageBox::warning(this, "OMG!!!","轿厢里没人谁按的按钮啊，见鬼啦~~");
     }
-    else
-    {
-        QMessageBox::warning(this, "哎呀错啊","只有门关闭过程中才能用啦,想出去的按下当前楼层的按钮就可以开门啦");
+    else{
+        if(getInDoorStatus()== doorStatus_closing)
+        {
+            setInDoorStatus(doorStatus_opening);
+        }
+        else
+        {
+            QMessageBox::warning(this, "哎呀错啊","只有门关闭过程中才能用啦,想出去的按下当前楼层的按钮就可以开门啦");
+        }
     }
-
-
 }
 
 void Elevator::closeDoorButFun()
 {
-    if(getInDoorStatus()== doorStatus_opened)
+    if(peopleNum == 0)
+    {
+        QMessageBox::warning(this, "OMG!!!","轿厢里没人谁按的按钮啊，见鬼啦~~");
+    }
+    else{
+        if(getInDoorStatus()== doorStatus_opened)
 #ifdef TEST
-        doorOffset = 40;
+            doorOffset = 40;
 #else
-        doorOffset = 100;
+            doorOffset = 100;
 #endif
+        else
+            QMessageBox::warning(this, "哎呀错啦~","门已经关好啦~~");
+    }
+
 }
 
 /**
@@ -863,34 +876,41 @@ void Elevator::leaveNumConfirm(void)  //按下下来乘客数后点击确认按�
     }
     else
     {
-        //QMessageBox::warning(this, "Warning","The IP Address Format is not right, please Input again!");
         QMessageBox::warning(this, "哎呀错啦","等门打开之后才能下来啊");
     }
 }
 
 void Elevator::destinationFloorButFun(int pushedBut)  // 轿厢内得人按下楼层的楼层的记录
 {
-    setDestinationFloor(pushedBut);
-    destinationFloorBut[pushedBut-1].setStyleSheet("QPushButton{border:4px inset rgb(255,99,65);}");
-    if(getDirection() == direction_stop)
+    if(peopleNum == 0)
     {
-        if(pushedBut-currentFloor>0) //目的楼层在上方
+        QMessageBox::warning(this, "OMG!!!","轿厢里没人谁按的按钮啊，见鬼啦~~");
+    }
+    else {
+        setDestinationFloor(pushedBut);
+        destinationFloorBut[pushedBut-1].setStyleSheet("QPushButton{border:4px inset rgb(255,99,65);}");
+
+        if(getDirection() == direction_stop)
         {
-            setDirection(direction_up);
-        }
-        else if(pushedBut-currentFloor<0) //目的楼层在下方
-        {
-            setDirection(direction_down);
-        }
-        else if(getInDoorStatus()==doorStatus_closed)  //就在此楼层 并且门关着
-        {
-            setInDoorStatus(doorStatus_opening);  //开门
-            destinationFloorBut[pushedBut-1].setStyleSheet("");
-            FxUp[pushedBut-1].setStyleSheet("");
-            FxDown[pushedBut-1].setStyleSheet("");
-            resetDestinationFloor(pushedBut);
+            if(pushedBut-currentFloor>0) //目的楼层在上方
+            {
+                setDirection(direction_up);
+            }
+            else if(pushedBut-currentFloor<0) //目的楼层在下方
+            {
+                setDirection(direction_down);
+            }
+            else if(getInDoorStatus()==doorStatus_closed)  //就在此楼层 并且门关着
+            {
+                setInDoorStatus(doorStatus_opening);  //开门
+                destinationFloorBut[pushedBut-1].setStyleSheet("");
+                FxUp[pushedBut-1].setStyleSheet("");
+                FxDown[pushedBut-1].setStyleSheet("");
+                resetDestinationFloor(pushedBut);
+            }
         }
     }
+
 }
 
 void Elevator::upRequestFun(int requestFool)
@@ -986,6 +1006,7 @@ void Elevator::workControl()  // 电梯运行控制
                     temp = OthersDemandQuery(direction_up);
                     if(temp.destinationStr==a) //目标是当前楼层
                     {
+
                         setInDoorStatus(doorStatus_opening);
                         destinationFloorBut[a-1].setStyleSheet("");
                         resetDestinationFloor(a);
